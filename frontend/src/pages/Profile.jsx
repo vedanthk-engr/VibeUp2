@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useVibeStore } from '../store/vibeStore'
 import { supabase } from '../lib/supabase'
+import { api } from '../lib/api'
+import BISComplianceBadge from '../components/shared/BISComplianceBadge'
 import { 
-  Volume2, Moon, RotateCcw, Sparkles, Play, Activity, Check, Lock, Award, Gift, Zap
+  Volume2, Moon, RotateCcw, Sparkles, Play, Activity, Check, Lock, Award, Gift, Zap,
+  ShieldCheck, Download, Trash2, ShieldAlert, Cpu, CheckCircle2
 } from 'lucide-react'
 
 const ARCHETYPE_DETAILS = {
@@ -130,6 +133,86 @@ export function Profile() {
   const [previewArchetype, setPreviewArchetype] = useState(riskArchetype)
   const [isPlayingVoice, setIsPlayingVoice] = useState(false)
   const [speechBubbleText, setSpeechBubbleText] = useState('')
+
+  // BIS IS 17428 Consent & DPDP Management State
+  const [consents, setConsents] = useState({
+    telemetry: { name: 'Market Telemetry & Watchlist Analytics', granted: true, standard_ref: 'IS 17428:2020 Part 1 Cl. 6.1' },
+    ai_profiling: { name: 'Gemma 4 Archetype Personalization', granted: true, standard_ref: 'IS/ISO/IEC 42001:2023 Cl. 7.2' },
+    rag_caching: { name: 'SEBI Document & Regulatory RAG Indexing', granted: true, standard_ref: 'SEBI RA Reg 2014 & ISO 42001' },
+    voice_synthesis: { name: 'Multi-Agent Voice Synthesis Cache', granted: true, standard_ref: 'IS 17428:2020 Data Minimization' }
+  })
+  const [exportingData, setExportingData] = useState(false)
+  const [erasingData, setErasingData] = useState(false)
+  const [erasureMessage, setErasureMessage] = useState(null)
+
+  useEffect(() => {
+    const fetchConsents = async () => {
+      try {
+        const res = await api.get(`/compliance/consent?user_id=${user?.id || 'default_user'}`)
+        if (res.data) setConsents(res.data)
+      } catch (err) {
+        console.warn('Failed to load user consents, using default IS 17428 settings:', err)
+      }
+    }
+    fetchConsents()
+  }, [user?.id])
+
+  const handleToggleConsent = async (consentKey) => {
+    const current = consents[consentKey]?.granted ?? true
+    const nextVal = !current
+    setConsents(prev => ({
+      ...prev,
+      [consentKey]: { ...prev[consentKey], granted: nextVal }
+    }))
+    try {
+      await api.post('/compliance/consent', {
+        user_id: user?.id || 'default_user',
+        consent_type: consentKey,
+        granted: nextVal
+      })
+    } catch (err) {
+      console.warn('Consent sync error:', err)
+    }
+  }
+
+  const handleExportData = async () => {
+    setExportingData(true)
+    try {
+      const res = await api.post(`/compliance/export-data?user_id=${user?.id || 'default_user'}`)
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(res.data, null, 2))
+      const downloadAnchor = document.createElement('a')
+      downloadAnchor.setAttribute("href", dataStr)
+      downloadAnchor.setAttribute("download", `vibeup_dpdp_is17428_export_${Date.now()}.json`)
+      document.body.appendChild(downloadAnchor)
+      downloadAnchor.click()
+      downloadAnchor.remove()
+    } catch (err) {
+      alert('Data export failed: ' + (err.message || 'Server error'))
+    } finally {
+      setExportingData(false)
+    }
+  }
+
+  const handleErasure = async () => {
+    const confirmInput = prompt('Type "DELETE MY DATA" to permanently purge your chat messages, journals, and behavioral memory under DPDP Act / IS 17428 Right to Erasure:')
+    if (confirmInput !== 'DELETE MY DATA') {
+      if (confirmInput !== null) alert('Erasure cancelled. Confirmation text did not match.')
+      return
+    }
+    setErasingData(true)
+    setErasureMessage(null)
+    try {
+      const res = await api.post('/compliance/erasure', {
+        user_id: user?.id || 'default_user',
+        confirm_text: 'DELETE MY DATA'
+      })
+      setErasureMessage(res.data?.confirmation || 'Data successfully erased per IS 17428 standards.')
+    } catch (err) {
+      alert('Data erasure error: ' + (err.message || 'Server error'))
+    } finally {
+      setErasingData(false)
+    }
+  }
 
   const displayName = user?.user_metadata?.full_name || 
     (user?.email 
@@ -877,6 +960,107 @@ export function Profile() {
               <Gift size={32} className="text-[#fd56a7]" />
             </div>
           </div>
+        </div>
+
+        {/* === BIS STANDARDS & DPDP TRUST CENTER === */}
+        <div className="bg-white border-4 border-black rounded-3xl p-6 md:p-8 shadow-[8px_8px_0px_#00d09c] relative overflow-hidden text-left">
+          {/* Top highlight bar */}
+          <div className="absolute top-0 left-0 w-full h-2.5 bg-gradient-to-r from-[#00d09c] via-[#7c3aed] to-[#3b82f6]" />
+
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-700 font-mono bg-emerald-100 px-2.5 py-0.5 rounded-md border border-emerald-300">
+                  IS 17428 • IS/ISO 42001 • BCBS 239
+                </span>
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              </div>
+              <h3 className="font-display text-2xl md:text-3xl font-black text-black uppercase">
+                BIS Trust & DPDP Privacy Center
+              </h3>
+              <p className="text-zinc-500 text-xs font-medium mt-1">
+                Grounded in the Bureau of Indian Standards (BIS LITD 30) and the Digital Personal Data Protection Act, 2023.
+              </p>
+            </div>
+            
+            <div className="shrink-0 flex items-center gap-2">
+              <BISComplianceBadge variant="badge" />
+            </div>
+          </div>
+
+          {/* Consent Toggles Grid */}
+          <div className="space-y-3 mb-6">
+            <span className="text-[10px] font-black uppercase tracking-wider text-zinc-400 font-mono block">
+              Explicit Purpose Consent Management (IS 17428 Part 1 Cl. 6)
+            </span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {Object.entries(consents).map(([key, item]) => {
+                const isGranted = item.granted ?? true
+                return (
+                  <div 
+                    key={key} 
+                    className="p-3.5 bg-zinc-50 border-2 border-black rounded-2xl flex items-center justify-between gap-3 shadow-[2px_2px_0px_#1c1b1b]"
+                  >
+                    <div className="flex-1 pr-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-black text-black">{item.name}</span>
+                      </div>
+                      <span className="text-[9px] font-mono text-zinc-500 block mt-0.5">{item.standard_ref}</span>
+                    </div>
+                    <button
+                      onClick={() => handleToggleConsent(key)}
+                      className={`w-12 h-6 rounded-full border-2 border-black flex items-center p-0.5 transition-colors cursor-pointer shrink-0 ${
+                        isGranted ? 'bg-[#00d09c] justify-end' : 'bg-zinc-200 justify-start'
+                      }`}
+                    >
+                      <motion.div 
+                        layout 
+                        className="w-4 h-4 rounded-full bg-white border border-black shadow-sm" 
+                      />
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Data Portability & Right to Erasure Buttons */}
+          <div className="pt-4 border-t-2 border-dashed border-zinc-200 flex flex-col sm:flex-row gap-3 justify-between items-center">
+            <div className="flex gap-2 w-full sm:w-auto">
+              <button
+                onClick={handleExportData}
+                disabled={exportingData}
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 bg-white border-2 border-black rounded-xl text-xs font-mono font-black text-black shadow-[2px_2px_0px_#1c1b1b] hover:bg-zinc-50 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
+              >
+                <Download size={14} className="text-black" />
+                <span>{exportingData ? 'Exporting...' : 'Export My Data (IS 17428)'}</span>
+              </button>
+
+              <button
+                onClick={handleErasure}
+                disabled={erasingData}
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-50 border-2 border-black rounded-xl text-xs font-mono font-black text-rose-700 shadow-[2px_2px_0px_#1c1b1b] hover:bg-rose-100 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
+              >
+                <Trash2 size={14} className="text-rose-600" />
+                <span>{erasingData ? 'Erasing...' : 'Right to Erasure (DPDP)'}</span>
+              </button>
+            </div>
+
+            <div className="text-[10px] font-mono text-zinc-400 text-center sm:text-right">
+              SHA-256 Audit Fingerprints Active • Zero Raw Credentials Stored
+            </div>
+          </div>
+
+          {erasureMessage && (
+            <motion.div 
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-4 p-3 bg-emerald-50 border-2 border-emerald-400 rounded-xl text-xs font-mono text-emerald-800 flex items-center gap-2"
+            >
+              <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+              <span>{erasureMessage}</span>
+            </motion.div>
+          )}
         </div>
 
       </div>

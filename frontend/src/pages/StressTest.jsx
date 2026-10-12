@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useVibeStore } from '../store/vibeStore'
 import { RainbowRibbon } from '../components/shared/RainbowRibbon'
 import { api } from '../lib/api'
+import BISComplianceBadge from '../components/shared/BISComplianceBadge'
 import { 
   ShieldAlert, Play, RefreshCw, Sparkles, ChevronRight, 
   AlertTriangle, Info, CheckCircle2, ArrowDownRight, ArrowUpRight, Lock
@@ -298,11 +299,14 @@ export function StressTest() {
           </h2>
         </div>
 
-        <div className="flex items-center gap-2 bg-[#e6fbf7] border-3 border-black px-4 py-2 rounded-2xl shadow-[3px_3px_0px_#1c1b1b]">
-          <span className="h-2.5 w-2.5 rounded-full bg-[#00d09c] animate-pulse" />
-          <span className="text-[10px] font-black font-headline text-[#00d09c] uppercase tracking-wider">
-            Quant Engine Active
-          </span>
+        <div className="flex items-center gap-3 flex-wrap">
+          <BISComplianceBadge variant="pill" />
+          <div className="flex items-center gap-2 bg-[#e6fbf7] border-3 border-black px-4 py-2 rounded-2xl shadow-[3px_3px_0px_#1c1b1b]">
+            <span className="h-2.5 w-2.5 rounded-full bg-[#00d09c] animate-pulse" />
+            <span className="text-[10px] font-black font-headline text-[#00d09c] uppercase tracking-wider">
+              Quant Engine Active
+            </span>
+          </div>
         </div>
       </header>
 

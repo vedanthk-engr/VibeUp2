@@ -133,6 +133,31 @@ class AgentMemory(Base):
 
 DBAgentMemory = AgentMemory
 
+class DBConsentRecord(Base):
+    __tablename__ = "consent_records"
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, index=True)
+    consent_type = Column(String, index=True)  # telemetry, ai_profiling, rag_caching, marketing
+    granted = Column(Boolean, default=True)
+    standard_ref = Column(String, default="IS 17428:2020 / DPDP Act 2023")
+    purpose = Column(Text)
+    ip_hash = Column(String, nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class DBAIAuditLog(Base):
+    __tablename__ = "ai_audit_logs"
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, nullable=True, index=True)
+    agent_name = Column(String, index=True)  # Gemma 4 Research Agent, Quant Signal Engine, etc.
+    model_id = Column(String)  # gemma-4-31b-it, hybrid-rule-v2
+    action_type = Column(String)  # stock_pick_generation, market_signal, risk_simulation
+    input_hash = Column(String)  # SHA-256 hash of input context
+    rag_sources = Column(Text, nullable=True)  # SEBI Circulars, NSE quotes cited
+    confidence_score = Column(Float, default=0.85)
+    sebi_disclaimer = Column(Text, default="Informational research only. Not SEBI registered investment advice.")
+    compliance_standard = Column(String, default="IS/ISO/IEC 42001:2023 & IS 17428:2020")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 # Helper to initialize DB tables
 def init_db():
     import sqlalchemy

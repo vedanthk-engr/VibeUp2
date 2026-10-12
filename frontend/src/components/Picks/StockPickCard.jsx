@@ -5,6 +5,7 @@ import { api } from '../../lib/api'
 import { AreaChart, Area, ResponsiveContainer, ReferenceArea, YAxis, XAxis, Tooltip } from 'recharts'
 import { motion } from 'framer-motion'
 import ModelBadge from '../shared/ModelBadge'
+import BISComplianceBadge from '../shared/BISComplianceBadge'
 
 export function StockPickCard({ pick, index = 0 }) {
   const { addHolding, holdings, setActivePage, setActiveDebateTicker, unlockCard } = useVibeStore()
@@ -279,7 +280,10 @@ export function StockPickCard({ pick, index = 0 }) {
             <TrendingUp className="text-[#630ed4] text-2xl shrink-0" size={24} />
             <h3 className="font-headline text-xl font-bold">The Vibe Thesis</h3>
           </div>
-          <ModelBadge model="gemma" />
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <ModelBadge model="gemma" />
+            <BISComplianceBadge variant="pill" provenance={pick.compliance_metadata} ticker={pick.ticker} />
+          </div>
         </div>
         <ul className="space-y-3 font-sans font-medium text-[#1c1b1b] text-xs">
           {pick.thesis.map((th, i) => {

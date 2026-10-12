@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from backend.models.database import init_db
-from backend.routers import market, signals, picks, debate, chat, regret, portfolio, rag, voice, cards, sector_pulse, whale, wrapped, vibescore, arbitrage, forecaster
+from backend.routers import market, signals, picks, debate, chat, regret, portfolio, rag, voice, cards, sector_pulse, whale, wrapped, vibescore, arbitrage, forecaster, compliance
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -70,6 +70,7 @@ app.include_router(wrapped.router, prefix="/api")
 app.include_router(vibescore.router, prefix="/api")
 app.include_router(arbitrage.router, prefix="/api")
 app.include_router(forecaster.router, prefix="/api")
+app.include_router(compliance.router, prefix="/api")
 
 @app.get("/")
 def read_root():
